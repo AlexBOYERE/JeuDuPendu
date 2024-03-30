@@ -46,10 +46,31 @@ let $chosenWord = "";
 let $guessedWord = [];
 let $incorrectGuesses = 0;
 
+
 function chooseRandomWord() {
     $chosenWord = words[Math.floor(Math.random() * words.length)];
     $guessedWord = Array($chosenWord.length).fill('_');
     $incorrectGuesses = 0;
+}
+
+async function chooseRandomWordAPI() {
+    // $chosenWord = words[Math.floor(Math.random() * words.length)];
+
+    try {
+        const response = await fetch('https://random-word-api.herokuapp.com/word?number=1&lang=fr'); // url
+        const data = await response.json();
+
+        if (data[0]) {
+            $chosenWord = data[0].toLowerCase();
+            $guessedWord = Array($chosenWord.length).fill('_');
+            $incorrectGuesses = 0;
+        } else {
+            console.error('Pas de mot trouvé.');
+        }
+
+    } catch (error) {
+        console.error(error);
+    }
 }
 
 function displayWord() {
@@ -67,6 +88,7 @@ function guessLetter() {
         }
     } else {
         $incorrectGuesses++;
+
         letterInputField.classList.add("explode");
         setTimeout(() => {
             letterInputField.classList.remove("explode");
@@ -83,18 +105,48 @@ function guessLetter() {
 function checkGameStatus() {
     if ($guessedWord.join('') === $chosenWord) {
         console.log("Félicitations ! Vous avez deviné le mot.");
-        resetGame();
+        showConfetti();
+        resetGame().then(r => console.log('Game reset.' + ' ' + $chosenWord)).catch(e => console.error(e));
     } else if ($incorrectGuesses === maxIncorrectGuesses) {
         console.log(`Désolé, vous avez perdu. Le mot était "${$chosenWord}".`);
-        resetGame();
+        resetGame().then(r => console.log('Game reset.' + ' ' + $chosenWord)).catch(e => console.error(e));
     }
 }
 
-function resetGame() {
+async function resetGame() {
+    // await chooseRandomWordAPI();
     chooseRandomWord();
     displayWord();
 }
 
-resetGame();
+resetGame().then(r => console.log('Game started.' + ' ' + $chosenWord)).catch(e => console.error(e));
 
-console.log($chosenWord);
+
+/**
+ * Confetti animation
+ */
+
+function showConfetti() {
+    const confettiContainer = document.getElementById("confetti-container");
+
+    for (let i = 0; i < 100; i++) {
+
+        const confetti = document.createElement("div");
+        confetti.classList.add("confetti");
+
+        confetti.style.backgroundColor = getRandomColor();
+
+        confetti.style.left = `${Math.random() * 100}vw`;
+        confetti.style.animationDuration = `${Math.random() * 2 + 1}s`;
+        confettiContainer.appendChild(confetti);
+    }
+}
+
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
